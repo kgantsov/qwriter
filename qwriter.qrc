@@ -1,0 +1,27 @@
+<RCC>
+    <qresource prefix="/" >
+        <file>images/Arrow-Left.png</file>
+        <file>images/Arrow-Right.png</file>
+        <file>images/avast.png</file>
+        <file>images/Copy.png</file>
+        <file>images/Cut.png</file>
+        <file>images/Document.png</file>
+        <file>images/Find.png</file>
+        <file>images/imprimante-v2.png</file>
+        <file>images/loupe.png</file>
+        <file>images/Messagerie.png</file>
+        <file>images/Paste.png</file>
+        <file>images/Redo.png</file>
+        <file>images/Save.png</file>
+        <file>images/Symbol-Delete.png</file>
+        <file>images/Undo.png</file>
+        <file>images/w.png</file>
+        <file>images/mes-documents.png</file>
+        <file>images/Config.png</file>
+        <file>images/Config-Tools.png</file>
+        <file>images/Zoom-in.png</file>
+        <file>images/Zoom-out.png</file>
+        <file>images/Zoom-Normal.png</file>
+        <file>images/tab_icon_red.png</file>
+    </qresource>
+</RCC>
