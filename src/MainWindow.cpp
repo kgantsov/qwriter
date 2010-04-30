@@ -74,6 +74,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WFlags f)
     tabOpenFiles->setTabsClosable(true);
 
     connect(tabOpenFiles, SIGNAL(tabCloseRequested(int)), this, SLOT(closeTab(int)));
+    //connect(&ftp, SIGNAL(done(bool)), this, SLOT(ftpDone(bool)));
     toolBar->setVisible(toolbarVisible);
     statusBar()->setVisible(statbarVisible);
     this->setMouseTracking(true);
@@ -112,7 +113,7 @@ MainWindow::MainWindow(QWidget * parent, Qt::WFlags f)
             mainText->setText(loadFile(fileNames.at(i).toString()));
             mainText->setModified(false);
             this->setWindowTitle(tr("%1 - %2").arg(fileNames.at(i).toString()).arg(tr("QWriter")));
-            mainText->setFont(mainFont);
+            //mainText->setFont(mainFont);
 
             QString styleHL = QFileInfo(fileNames.at(i).toString()).fileName();
             QStringList st = styleHL.split(".");
@@ -945,7 +946,7 @@ void MainWindow::newFile()
     mainText->setText("");
     mainText->setModified(false);
     mainText->setFocus();
-    mainText->setFont(mainFont);
+    //mainText->setFont(mainFont);
     mainText->setTabWidth(spaces);
     mainText->setMarginWidth(0, (numberBlock) ? 42 : 0);
 
@@ -1005,7 +1006,7 @@ void MainWindow::openFile(const QString &text)
 
             mainText->setText(loadFile(fileName));
             mainText->setModified(false);
-            mainText->setFont(mainFont);
+            //mainText->setFont(mainFont);
             mainText->setFocus();
             mainText->setTabWidth(spaces);
             mainText->setMarginWidth(0, (numberBlock) ? 42 : 0);
@@ -1053,14 +1054,13 @@ void MainWindow::saveAsFile()
 {
     QString fileName = QFileDialog::getSaveFileName(this);
     if (fileName.isEmpty())
-    return;
+        return;
 
-    fileNames.removeAt(fileNames.lastIndexOf(curFile));
+    fileNames[index] = fileName;
     curFile = fileName;
     this->setWindowTitle(tr("%1 - %2").arg(fileName).arg(tr("QWriter")));
     tabOpenFiles->setTabText(index, QFileInfo(fileName).fileName());
     saveFile(fileName);
-    fileNames<<fileName;
 }
 
 void MainWindow::resizeEvent(QResizeEvent *event)
@@ -1158,10 +1158,30 @@ void MainWindow::dropEvent(QDropEvent *event)
 
     for (int i = 0; i < urls.size(); ++i) {
         fileName = urls.at(i).toLocalFile();
-        QFile file(fileName);
+        //qDebug() << urls.at(i).scheme();
+        /*
+        if (urls.at(i).scheme() == "ftp") {
+            QString localFileName = QFileInfo(urls.at(i).path()).fileName();
+            ftpFile.setFileName(localFileName);
+            if (!ftpFile.open(QIODevice::WriteOnly)) {
+                return;
+            }
+            qDebug() << urls.at(i).host() << urls.at(i).port() << urls.at(i).userName() << urls.at(i).password() << urls.at(i).authority();
+           ftp.connectToHost(urls.at(i).host(), urls.at(i).port(21));
+           if (!urls.at(i).userName().isEmpty()) {
+                ftp.login(urls.at(i).userName(), urls.at(i).password());
+            } else {
+                ftp.login();
+            }
+            ftp.get(urls.at(i).path(), &ftpFile);
+            ftp.close();
 
-        if (file.exists())
-            openFile(fileName);
+        } else { 
+        */
+            QFile file(fileName);
+            if (file.exists())
+                openFile(fileName);
+        //}
     }
 }
 
@@ -1424,6 +1444,18 @@ void MainWindow::extToHightlightStyle(const QString &ext)
 
 }
 
+void MainWindow::ftpDone(bool b) {
+    if (b) {
+        qDebug() << qPrintable(ftp.errorString());
+        return;
+    }
+    ftpFile.close();
+}
+
+void MainWindow::reconnect() {
+
+}
+
 void MainWindow::zoomIn()
 {
     if(index < 0)
@@ -1434,8 +1466,7 @@ void MainWindow::zoomIn()
     mainText->zoomTo(currentZoom + 1);
 }
 
-void MainWindow::zoomOut()
-{
+void MainWindow::zoomOut() {
     if(index < 0)
         return;
 
@@ -1745,6 +1776,7 @@ void MainWindow::selStyleHightlight(QAction * actSel)
 {
     if (index < 0)
         return;
+
     if (actSel == txtStyleAct) {
         mainText->setSyntaxHighlighter("none");
     }
@@ -1870,17 +1902,9 @@ void MainWindow::slotPrint()
     QsciPrinter printer;
     QPrintDialog printDial(&printer, this);
 
-    //QPrinter printer;
-    //QPrintDialog printDial(&printer, this);
     if (printDial.exec() == QDialog::Accepted) {
         printer.printRange(mainText, 0);
     }
-    //if (!printDial.exec())
-    //    return;
-
-    //QTextDocument *document = mainText->document();
-    //document->setPageSize(QSizeF(printer.pageRect().width(), printer.pageRect().height()));
-    //document->print(&printer);
 }
 
 void MainWindow::findSlot()
@@ -1899,7 +1923,7 @@ void MainWindow::findNext()
         return;
     if (notFound == 1)
         return;
-    qDebug() << mainText->text(currentLine - 1).length() << currentLine;
+
     if(!mainText->findFirst(findExpr, findRE, findCS, findWO, findWrap, true, currentLine, currentRow)) {
         if (!mainText->findFirst(findExpr, findRE, findCS, findWO, findWrap, true, 0, 0)) {
             notFound = 1;
@@ -2040,104 +2064,13 @@ void MainWindow::prevBookMarkSlot()
 
 void MainWindow::replaceNextClicked()
 {
-    /*QTextDocument *doc = mainText->document();
-    QTextCursor c = mainText->textCursor();
-    QTextCursor newCursor = c;
-    
-    QPalette p = findWidg->replaceText->palette();
-    QPalette p1 = palette();
-    p1.setColor(QPalette::Inactive, QPalette::Highlight, p.color(QPalette::Active, QPalette::Highlight));
-    p1.setColor(QPalette::Inactive, QPalette::HighlightedText, p.color(QPalette::Active, QPalette::HighlightedText));
-    if (findWidg->findLText->text() == "")
-        return;
 
-    if (mainText->textCursor().selectedText() == findWidg->findLText->text()) {
-        mainText->insertPlainText(findWidg->replaceText->text());
-
-        newCursor = doc->find(findWidg->findLText->text(), c);
-        if (newCursor.isNull()) {
-            QTextCursor ac(doc);
-            ac.movePosition(QTextCursor::Start);
-            newCursor = doc->find(findWidg->findLText->text(), ac);
-
-            if (newCursor.isNull()) {
-                p.setColor(QPalette::Active, QPalette::Base, QColor(255, 102, 102));
-                findWidg->replaceText->setPalette(p);
-                return;
-            }
-        }
-    }
-
-    mainText->setTextCursor(newCursor);
-
-    newCursor = doc->find(findWidg->findLText->text(), c);
-    if (newCursor.isNull()) {
-        QTextCursor ac(doc);
-        ac.movePosition(QTextCursor::Start);
-        newCursor = doc->find(findWidg->findLText->text(), ac);
-
-        if (newCursor.isNull()) {
-            p.setColor(QPalette::Active, QPalette::Base, QColor(255, 102, 102));
-            findWidg->replaceText->setPalette(p);
-            return;
-        }
-    }
-
-    mainText->setTextCursor(newCursor);
-    mainText->setPalette(p1);
-    */
 }
 
 
 void MainWindow::replacePrevClicked()
 {
-    /*QTextDocument *doc = mainText->document();
-    QTextCursor c = mainText->textCursor();
-    QTextCursor newCursor = c;
 
-    QPalette p = findWidg->replaceText->palette();
-    QPalette p1 = palette();
-    p1.setColor(QPalette::Inactive, QPalette::Highlight, p.color(QPalette::Active, QPalette::Highlight));
-    p1.setColor(QPalette::Inactive, QPalette::HighlightedText, p.color(QPalette::Active, QPalette::HighlightedText));
-    if (findWidg->findLText->text() == "") {
-        return;
-    }
-
-    if (mainText->textCursor().selectedText() == findWidg->findLText->text()) {
-        mainText->insertPlainText(findWidg->replaceText->text());
-
-        newCursor = doc->find(findWidg->findLText->text(), c, QTextDocument::FindBackward);
-        if (newCursor.isNull()) {
-            QTextCursor ac(doc);
-            ac.movePosition(QTextCursor::End);
-            newCursor = doc->find(findWidg->findLText->text(), ac, QTextDocument::FindBackward);
-
-            if (newCursor.isNull()) {
-                p.setColor(QPalette::Active, QPalette::Base, QColor(255, 102, 102));
-                findWidg->replaceText->setPalette(p);
-                return;
-            }
-        }
-    }
-
-    mainText->setTextCursor(newCursor);
-
-    newCursor = doc->find(findWidg->findLText->text(), c, QTextDocument::FindBackward);
-    if (newCursor.isNull()) {
-        QTextCursor ac(doc);
-        ac.movePosition(QTextCursor::End);
-        newCursor = doc->find(findWidg->findLText->text(), ac, QTextDocument::FindBackward);
-
-        if (newCursor.isNull()) {
-            p.setColor(QPalette::Active, QPalette::Base, QColor(255, 102, 102));
-            findWidg->replaceText->setPalette(p);
-            return;
-        }
-    }
-
-    mainText->setTextCursor(newCursor);
-    mainText->setPalette(p1);
-    */
 }
 
 void MainWindow::commentLine() {

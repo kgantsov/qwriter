@@ -42,6 +42,7 @@
 #include <QTextStream>
 #include <QTextEdit>
 #include <QSettings>
+#include <QFtp>
 #include <Qsci/qsciprinter.h>
 #include "finddialog.h"
 
@@ -214,7 +215,10 @@ private:
     bool findDial;
     void retranlateUi();
     void findCodecs();
-    void  extToHightlightStyle(const QString &ext);
+    void extToHightlightStyle(const QString &ext);
+    void reconnect();
+    QFile ftpFile;
+    QFtp ftp;
 public slots:
     void findNext();
     void findPrev();
@@ -251,6 +255,7 @@ private slots:
     void changeCodec();
     void modificationChanged(bool b);
     void copyAvailable(bool b);
+    void ftpDone(bool b);
     void selStyleHightlight(QAction * actSel);
     void toolBarVis(int state);
     void toolBarVis(bool b);
